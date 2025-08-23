@@ -40,18 +40,7 @@ module TicTacToe
     def self.game_save(game)
       board = JSON.dump(game.board)
       board_view = JSON.dump(Board.generate_board_view(game.board))
-      game_save = GameInfo.new(
-        id: game.id,
-        board:,
-        board_view:,
-        turn: game.turn,
-        player: game.player,
-        computer: game.computer,
-        status: game.status,
-        winner: game.winner,
-        last_move_player: game.last_move_player,
-        last_move_computer: game.last_move_computer
-      )
+      game_save = game.with(board:, board_view:)
       game_hash = game_save.to_h.transform_keys(&:to_s)
       REDIS.hset(game.id, game_hash)
       game.with(board_view: Board.generate_board_view(game.board))

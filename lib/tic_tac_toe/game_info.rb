@@ -13,4 +13,10 @@ module TicTacToe
     :last_move_player,
     :last_move_computer
   )
+
+  MoveRequest = Data.define(
+    :game_id,
+    :position,
+    :idempotency_key
+  )
 end
