@@ -24,6 +24,7 @@ module TicTacToe
       if Victory.check_winner(game, game.player)
         game = game.with(winner: "player", status: "completed")
       end
+      REDIS.setex("idempotency:#{id}:#{move_request.idempotency_key}", 3600, game.to_json)
       Game.game_save(game)
     end
 

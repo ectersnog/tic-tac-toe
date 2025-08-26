@@ -11,7 +11,8 @@ module TicTacToe
     :status,
     :winner,
     :last_move_player,
-    :last_move_computer
+    :last_move_computer,
+    :token
   )
 
   MoveRequest = Data.define(

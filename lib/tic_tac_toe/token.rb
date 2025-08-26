@@ -3,11 +3,8 @@
 module TicTacToe
   module Token
     def self.valid?(game_id, token)
-      REDIS.get("#{game_id}_token") == token
-    end
-
-    def self.set_token(game_id, token)
-      REDIS.set("#{game_id}_token", token)
+      game = TicTacToe::Game.load_game(game_id)
+      game.token == token
     end
 
     def self.generate_token

@@ -6,50 +6,42 @@ RSpec.describe 'games' do
   path '/games' do
     post('new game') do
       consumes 'application/json'
-      produces 'application/json
-'
-      parameter name: :player, in: :body, schema: {
+      produces 'application/json'
+      parameter name: :player_symbol, in: :body, schema: {
         type: :object,
         properties: {
           player: {
             type: :string,
             enum: %w[X O]
           }
-        },
-        required: ['player']
+        }
       }
 
       response 200, 'success' do
         schema "$ref" => "#/components/schemas/board_response"
-
-        let(:player) { 'X' }
+        let(:player_symbol) {}
 
         run_test!
       end
 
       response 200, 'default player to X' do
-        let(:player) { 'q' }
+        schema "$ref" => "#/components/schemas/board_response"
+        let(:player_symbol) { { player: 'Q' } }
 
         run_test! do |response|
           data = JSON.parse(response.body)
           expect(data['player']).to eq('X')
         end
       end
-    end
-  end
 
-  path '/games/{id}' do
-    parameter name: :id, in: :path, type: :string
-
-    get('show game') do
-      produces 'application/json'
-
-      response 200, 'success' do
+      response 200, 'allow player to play as O' do
         schema "$ref" => "#/components/schemas/board_response"
+        let(:player_symbol) { { player: 'O' } }
 
-        let(:id) { TicTacToe::Game.new_game.id }
-
-        run_test!
+        run_test! do |response|
+          data = JSON.parse(response.body)
+          expect(data['player']).to eq("O")
+        end
       end
     end
   end

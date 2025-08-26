@@ -14,10 +14,11 @@ module TicTacToe
       board_view = Board.generate_board_view(board)
       turn = "player"
       computer = player == "X" ? "O" : "X"
-      status = "started"
+      status = "active"
       winner = ""
       last_move_player = 0
       last_move_computer = 0
+      token = Token.generate_token
 
       game = GameInfo.new(
         id:,
@@ -29,7 +30,8 @@ module TicTacToe
         status:,
         winner:,
         last_move_player:,
-        last_move_computer:
+        last_move_computer:,
+        token:
       )
 
       return nil unless game_save(game)
@@ -54,6 +56,10 @@ module TicTacToe
       parsed[:last_move_player] = parsed[:last_move_player].to_i
       parsed[:last_move_computer] = parsed[:last_move_computer].to_i
       GameInfo.new(**parsed)
+    end
+
+    def self.game_exists?(id)
+      REDIS.exists(id)
     end
   end
 end

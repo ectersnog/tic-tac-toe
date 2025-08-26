@@ -138,6 +138,8 @@ RSpec/VariableName:
   AllowedPatterns:
     - Authorization
     - ^ids
+    - X-Game-Token
+    - Idempotency-Key
 
 Style/ClassAndModuleChildren:
   Enabled: false
