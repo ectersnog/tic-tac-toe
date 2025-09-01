@@ -1,11 +1,36 @@
 # frozen_string_literal: true
 
+require 'forwardable'
 require_relative 'board'
 require_relative 'game_info'
 
 module TicTacToe
   class Game
-    def self.new_game(player = "X")
+    extend Forwardable
+
+    class GameNotFound < StandardError; end
+    class InvalidToken < StandardError; end
+
+    attr_accessor :game
+
+    def_delegators :@game,
+      :id,
+      :board,
+      :board_view,
+      :turn,
+      :player,
+      :computer,
+      :status,
+      :winner,
+      :last_move_player,
+      :last_move_computer,
+      :token
+
+    def initialize(id: nil, player: "X", token: nil)
+      @game = self.class.find_game(id:, player:, token:)
+    end
+
+    def self.new_game(player: "X")
       unless %w[X O].include? player
         player = "X"
       end
@@ -48,18 +73,22 @@ module TicTacToe
       game.with(board_view: Board.generate_board_view(game.board))
     end
 
-    def self.load_game(id)
-      raw = REDIS.hgetall(id)
-      parsed = raw.transform_keys(&:to_sym)
-      parsed[:board] = JSON.parse(parsed[:board])
-      parsed[:board_view] = JSON.parse(parsed[:board_view])
-      parsed[:last_move_player] = parsed[:last_move_player].to_i
-      parsed[:last_move_computer] = parsed[:last_move_computer].to_i
-      GameInfo.new(**parsed)
-    end
+    def self.find_game(id: nil, player: "X", token: nil)
+      if id.nil?
+        new_game(player:)
+      elsif REDIS.exists?(id)
+        raw = REDIS.hgetall(id)
+        parsed = raw.transform_keys(&:to_sym)
+        raise InvalidToken, "Invalid token" if parsed[:token] != token
 
-    def self.game_exists?(id)
-      REDIS.exists(id)
+        parsed[:board] = JSON.parse(parsed[:board])
+        parsed[:board_view] = JSON.parse(parsed[:board_view])
+        parsed[:last_move_player] = parsed[:last_move_player].to_i
+        parsed[:last_move_computer] = parsed[:last_move_computer].to_i
+        GameInfo.new(**parsed)
+      else
+        raise GameNotFound, "Game not found"
+      end
     end
   end
 end

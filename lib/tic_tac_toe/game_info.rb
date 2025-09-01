@@ -16,7 +16,7 @@ module TicTacToe
   )
 
   MoveRequest = Data.define(
-    :game_id,
+    :id,
     :position,
     :idempotency_key
   )

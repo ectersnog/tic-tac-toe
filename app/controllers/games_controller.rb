@@ -7,14 +7,14 @@ ERRORS = [
 ].freeze
 
 class GamesController < ApplicationController
-  before_action :check_token_presence, only: %i[show update]
-  before_action :check_idempotency_key, only: %i[update]
+  rescue_from TicTacToe::Game::GameNotFound, with: :game_not_found
+  rescue_from TicTacToe::Game::InvalidToken, with: :invalid_token
 
   def index
     game_info = if params[:player]
-      TicTacToe::Game.new_game(params[:player])
+      TicTacToe::Game.new(player: params[:player])
     else
-      TicTacToe::Game.new_game
+      TicTacToe::Game.new
     end
 
     render locals: { game_info: }
@@ -23,29 +23,31 @@ class GamesController < ApplicationController
   def show
     token = request.headers["X-Game-Token"]
 
-    return render json: { errors: ["game not found"] }, status: :not_found if TicTacToe::Game.game_exists?(params[:id]).zero?
-    return render json: { errors: ["invalid token"] }, status: :unauthorized unless TicTacToe::Token.valid?(params[:id], token)
-
-    game_info = TicTacToe::Game.load_game(params[:id])
+    game_info = TicTacToe::Game.new(
+      id: params[:id],
+      player: params[:player],
+      token:
+    )
+    # game_info = TicTacToe::Game.find_game(params[:id])
     render locals: { game_info: }
   end
 
   def update
     idempotency_key = request.headers["Idempotency-Key"]
+    token = request.headers["X-Game-Token"]
     move_request = TicTacToe::MoveRequest.new(
-      game_id: params[:id],
+      id: params[:id],
       position: params[:position],
       idempotency_key:)
 
     response = TicTacToe::Moves.player_move(
-      params[:id],
-      params[:position],
-      move_request)
+      move_request:,
+      token:)
 
     if ERRORS.include? response
       render json: { errors: [response] }, status: :conflict
     elsif response.winner.empty? && response.turn == "computer"
-      response = TicTacToe::Moves.computer_move(params[:id], move_request)
+      response = TicTacToe::Moves.computer_move(move_request:, token:)
       render locals: { game_info: response }
     else
       render locals: { game_info: response }
@@ -54,9 +56,12 @@ class GamesController < ApplicationController
 
   private
 
-  def check_token_presence
-    token = request.headers["X-Game-Token"]
-    render json: { errors: ["game token required"] }, status: :unauthorized if token.blank?
+  def game_not_found(error)
+    render json: { errors: [error.message] }, status: :not_found
+  end
+
+  def invalid_token(error)
+    render json: { errors: [error.message] }, status: :unauthorized
   end
 
   def check_idempotency_key
