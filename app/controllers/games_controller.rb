@@ -1,14 +1,11 @@
 # frozen_string_literal: true
 
-ERRORS = [
-  "Invalid position",
-  "Square already taken",
-  "Game completed"
-].freeze
+require 'tic_tac_toe/game_info'
 
 class GamesController < ApplicationController
-  rescue_from TicTacToe::Game::GameNotFound, with: :game_not_found
-  rescue_from TicTacToe::Game::InvalidToken, with: :invalid_token
+  rescue_from TicTacToe::GameNotFound, with: :game_not_found
+  rescue_from TicTacToe::InvalidToken, with: :invalid_token
+  rescue_from TicTacToe::InvalidMove, with: :invalid_move
 
   def index
     game_info = if params[:player]
@@ -44,14 +41,10 @@ class GamesController < ApplicationController
       move_request:,
       token:)
 
-    if ERRORS.include? response
-      render json: { errors: [response] }, status: :conflict
-    elsif response.winner.empty? && response.turn == "computer"
+    if response.winner.empty? && response.turn == "computer"
       response = TicTacToe::Moves.computer_move(move_request:, token:)
-      render locals: { game_info: response }
-    else
-      render locals: { game_info: response }
     end
+    render locals: { game_info: response }
   end
 
   private
@@ -62,6 +55,10 @@ class GamesController < ApplicationController
 
   def invalid_token(error)
     render json: { errors: [error.message] }, status: :unauthorized
+  end
+
+  def invalid_move(error)
+    render json: { errors: [error.message] }, status: :conflict
   end
 
   def check_idempotency_key

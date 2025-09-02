@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 module TicTacToe
+  class GameNotFound < StandardError; end
+  class InvalidToken < StandardError; end
+  class InvalidMove < StandardError; end
+
   GameInfo = Data.define(
     :id,
     :board,

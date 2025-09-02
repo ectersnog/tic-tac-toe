@@ -8,10 +8,10 @@ module GameHelpers
     game
   end
 
-  def create_winning_game(positions)
+  def create_winning_game(positions, symbol: 'X')
     game = TicTacToe::Game.find_game
     positions.each do |position|
-      game.board[position] = game.player
+      game.board[position] = symbol
     end
     TicTacToe::Game.game_save(game)
     game
