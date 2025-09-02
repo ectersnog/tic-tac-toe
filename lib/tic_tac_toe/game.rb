@@ -8,9 +8,6 @@ module TicTacToe
   class Game
     extend Forwardable
 
-    class GameNotFound < StandardError; end
-    class InvalidToken < StandardError; end
-
     attr_accessor :game
 
     def_delegators :@game,

@@ -5,15 +5,14 @@ module TicTacToe
     def self.player_move(move_request:, token: nil)
       if (cached = REDIS.get("idempotency:#{move_request.id}:#{move_request.idempotency_key}"))
         game = GameInfo.new(**JSON.parse(cached))
-        game = game.with(turn: "player")
         return Game.game_save(game)
       end
 
       game = Game.new(id: move_request.id, token:)
       position = move_request.position.to_i - 1
-      return "Invalid position" if position > 8 || position.negative?
-      return "Game completed" if Victory.game_won?(game)
-      return "Square already taken" unless check_position?(game, position)
+      raise InvalidMove, "Invalid position" if position > 8 || position.negative?
+      raise InvalidMove, "Game completed" if Victory.game_won?(game)
+      raise InvalidMove, "Square already taken" unless check_position?(game, position)
 
       game.board[position] = game.player
       game = game.game.with(
