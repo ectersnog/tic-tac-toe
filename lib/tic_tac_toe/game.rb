@@ -40,7 +40,7 @@ module TicTacToe
       winner = ""
       last_move_player = 0
       last_move_computer = 0
-      token = Token.generate_token
+      token = SecureRandom.hex(10)
 
       game = GameInfo.new(
         id:,
