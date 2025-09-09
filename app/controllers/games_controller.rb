@@ -30,21 +30,25 @@ class GamesController < ApplicationController
   end
 
   def update
-    idempotency_key = request.headers["Idempotency-Key"]
+    idempotency_key = check_idempotency_key
     token = request.headers["X-Game-Token"]
-    move_request = TicTacToe::MoveRequest.new(
-      id: params[:id],
-      position: params[:position],
-      idempotency_key:)
+    if idempotency_key.blank?
+      render json: { errors: ["Idempotency key not found"] }, status: :unprocessable_entity
+    else
+      move_request = TicTacToe::MoveRequest.new(
+        id: params[:id],
+        position: params[:position],
+        idempotency_key:)
 
-    response = TicTacToe::Moves.player_move(
-      move_request:,
-      token:)
+      response = TicTacToe::Moves.player_move(
+        move_request:,
+        token:)
 
-    if response.winner.empty? && response.turn == "computer"
-      response = TicTacToe::Moves.computer_move(move_request:, token:)
+      if response.winner.empty? && response.turn == "computer"
+        response = TicTacToe::Moves.computer_move(move_request:, token:)
+      end
+      render locals: { game_info: response }
     end
-    render locals: { game_info: response }
   end
 
   private
@@ -62,7 +66,6 @@ class GamesController < ApplicationController
   end
 
   def check_idempotency_key
-    idempotency_key = request.headers["Idempotency-Key"]
-    render json: { errors: ["Idempotency key not found"] }, status: :unprocessable_entity if idempotency_key.blank?
+    request.headers["Idempotency-Key"]
   end
 end

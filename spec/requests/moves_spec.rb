@@ -32,28 +32,6 @@ RSpec.describe 'moves' do
         run_test!
       end
 
-      response 409, 'returns an error on already finished game' do
-        schema "$ref" => "#/components/schemas/error_response"
-        let(:game) { create_game(status: 'completed') }
-        let(:id) { game.id }
-        let(:'X-Game-Token') { game.token }
-        let(:'Idempotency-Key') { SecureRandom.hex(10) }
-        let(:body) { { position: 1 } }
-
-        run_test!
-      end
-
-      response 409, 'returns an error on invalid position' do
-        schema "$ref" => "#/components/schemas/error_response"
-        let(:game) { create_game }
-        let(:id) { game.id }
-        let(:'X-Game-Token') { game.token }
-        let(:'Idempotency-Key') { SecureRandom.hex(10) }
-        let(:body) { { position: 10 } }
-
-        run_test!
-      end
-
       response 200, 'returns an error on already take square' do
         let(:game) { create_game }
         let(:id) { game.id }
@@ -79,6 +57,39 @@ RSpec.describe 'moves' do
           error_body = JSON.parse(response.body, symbolize_names: true)
           expect(error_body[:errors][0]).to eq('Square already taken')
         end
+      end
+
+      response 409, 'returns an error on already finished game' do
+        schema "$ref" => "#/components/schemas/error_response"
+        let(:game) { create_game(status: 'completed') }
+        let(:id) { game.id }
+        let(:'X-Game-Token') { game.token }
+        let(:'Idempotency-Key') { SecureRandom.hex(10) }
+        let(:body) { { position: 1 } }
+
+        run_test!
+      end
+
+      response 409, 'returns an error on invalid position' do
+        schema "$ref" => "#/components/schemas/error_response"
+        let(:game) { create_game }
+        let(:id) { game.id }
+        let(:'X-Game-Token') { game.token }
+        let(:'Idempotency-Key') { SecureRandom.hex(10) }
+        let(:body) { { position: 10 } }
+
+        run_test!
+      end
+
+      response 422, 'returns an error if missing idempotency-key' do
+        schema "$ref" => "#/components/schemas/error_response"
+        let(:game) { create_game }
+        let(:id) { game.id }
+        let(:'X-Game-Token') { game.token }
+        let(:body) { { position: 1 } }
+        let(:'Idempotency-Key') {}
+
+        run_test!
       end
     end
   end
