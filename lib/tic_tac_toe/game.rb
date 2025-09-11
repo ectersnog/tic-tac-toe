@@ -32,8 +32,8 @@ module TicTacToe
         player = "X"
       end
       id = SecureRandom.uuid
-      board = Board.generate_board
-      board_view = Board.generate_board_view(board)
+      board = Board.new.board
+      board_view = Board.new.board_view
       turn = "player"
       computer = player == "X" ? "O" : "X"
       status = "active"
@@ -63,11 +63,11 @@ module TicTacToe
 
     def self.game_save(game)
       board = JSON.dump(game.board)
-      board_view = JSON.dump(Board.generate_board_view(game.board))
+      board_view = JSON.dump(game.board_view)
       game_save = game.with(board:, board_view:)
       game_hash = game_save.to_h.transform_keys(&:to_s)
       REDIS.hset(game.id, game_hash)
-      game.with(board_view: Board.generate_board_view(game.board))
+      game
     end
 
     def self.find_game(id: nil, player: "X", token: nil)

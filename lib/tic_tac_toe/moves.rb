@@ -18,7 +18,7 @@ module TicTacToe
       game = game.game.with(
         last_move_player: position + 1,
         turn: "computer",
-        board_view: Board.generate_board_view(game.board)
+        board_view: game.board_view
       )
       if Victory.check_winner(game, game.player)
         game = game.with(winner: "player", status: "completed")
@@ -51,7 +51,7 @@ module TicTacToe
       game = game.game.with(
         last_move_computer: position + 1,
         turn: "player",
-        board_view: Board.generate_board_view(game.board)
+        board_view: game.board_view
       )
       if Victory.check_winner(game, game.computer)
         game = game.with(winner: "computer", status: "completed")
