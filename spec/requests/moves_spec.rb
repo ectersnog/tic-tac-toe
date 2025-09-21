@@ -42,8 +42,7 @@ RSpec.describe 'moves' do
 
         run_test! do |first_response|
           data = JSON.parse(first_response.body, symbolize_names: true)
-          data = TicTacToe::GameInfo.new(**data, token: game.token)
-          expect(data.board[position - 1]).to eq(data.player)
+          expect(data[:board][position - 1]).to eq(data[:player])
 
           post "/games/#{id}",
             params: { position: }.to_json,

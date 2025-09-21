@@ -1,30 +1,10 @@
 # frozen_string_literal: true
 
 module TicTacToe
+  # Game not found error
   class GameNotFound < StandardError; end
+  # Invalid Token for game error
   class InvalidToken < StandardError; end
+  # Invalid Move for game play error
   class InvalidMove < StandardError; end
-
-  # Data structure for passing Game information between methods
-
-  GameInfo = Data.define(
-    :id,
-    :board,
-    :board_view,
-    :turn,
-    :player,
-    :computer,
-    :status,
-    :winner,
-    :last_move_player,
-    :last_move_computer,
-    :token
-  )
-
-  # Data structure for passing Move information between methods
-  MoveRequest = Data.define(
-    :id,
-    :position,
-    :idempotency_key
-  )
 end

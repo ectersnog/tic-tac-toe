@@ -44,9 +44,8 @@ RSpec.describe 'victory conditions' do
 
           run_test! do |response|
             data = JSON.parse(response.body, symbolize_names: true)
-            data = TicTacToe::GameInfo.new(**data, token: winning_game.token)
-            expect(data.status).to eq('completed')
-            expect(data.winner).to eq('player')
+            expect(data[:status]).to eq('completed')
+            expect(data[:winner]).to eq('player')
           end
         end
       end
