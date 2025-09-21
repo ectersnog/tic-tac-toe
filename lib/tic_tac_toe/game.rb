@@ -1,76 +1,59 @@
 # frozen_string_literal: true
 
-require 'forwardable'
 require_relative 'board'
 require_relative 'game_info'
+require_relative 'moves'
 
 module TicTacToe
   class Game
-    extend Forwardable
+    include Moves
+    attr_accessor :status
 
-    attr_accessor :game
-
-    def_delegators :@game,
-      :id,
-      :board,
+    attr_reader :board,
       :board_view,
-      :turn,
       :player,
       :computer,
-      :status,
+      :id,
+      :turn,
       :winner,
-      :last_move_player,
-      :last_move_computer,
       :token
 
     def initialize(id: nil, player: "X", token: nil)
-      @game = self.class.find_game(id:, player:, token:)
+      find_game(id:, player:, token:)
     end
 
-    def self.new_game(player: "X")
-      unless %w[X O].include? player
-        player = "X"
-      end
-      id = SecureRandom.uuid
-      board = Board.new.board
-      board_view = Board.new.board_view
-      turn = "player"
-      computer = player == "X" ? "O" : "X"
-      status = "active"
-      winner = ""
-      last_move_player = 0
-      last_move_computer = 0
-      token = SecureRandom.hex(10)
+    def new_game(player: "X")
+      @id = SecureRandom.uuid
+      @player = Player.new(marker: "X", last_move: 0)
+      @player.marker = "O" if player == "O"
+      @computer = Player.new(marker: (@player.marker == "X" ? "O" : "X"), last_move: 0)
+      @board = Board.new
+      @turn = "player"
+      @status = "active"
+      @winner = ""
+      @token = SecureRandom.hex(10)
 
-      game = GameInfo.new(
-        id:,
-        board:,
-        board_view:,
-        turn:,
-        player:,
-        computer:,
-        status:,
-        winner:,
-        last_move_player:,
-        last_move_computer:,
-        token:
-      )
-
-      return nil unless game_save(game)
-
-      game
+      self.game_save
     end
 
-    def self.game_save(game)
-      board = JSON.dump(game.board)
-      board_view = JSON.dump(game.board_view)
-      game_save = game.with(board:, board_view:)
-      game_hash = game_save.to_h.transform_keys(&:to_s)
-      REDIS.hset(game.id, game_hash)
-      game
+    def game_save
+      game_hash = {
+        board: @board.board_json,
+        board_view: @board.board_view_json,
+        turn: @turn,
+        player: @player.marker,
+        computer: @computer.marker,
+        status: @status,
+        winner: @winner,
+        last_move_player: @player.last_move,
+        last_move_computer: @computer.last_move,
+        token: @token
+      }
+      REDIS.hset(@id, game_hash)
+      self
     end
 
-    def self.find_game(id: nil, player: "X", token: nil)
+    def find_game(id: nil, player: "X", token: nil)
       if id.nil?
         new_game(player:)
       elsif REDIS.exists?(id)
@@ -78,14 +61,46 @@ module TicTacToe
         parsed = raw.transform_keys(&:to_sym)
         raise InvalidToken, "Invalid token" if parsed[:token] != token
 
-        parsed[:board] = JSON.parse(parsed[:board])
-        parsed[:board_view] = JSON.parse(parsed[:board_view])
-        parsed[:last_move_player] = parsed[:last_move_player].to_i
-        parsed[:last_move_computer] = parsed[:last_move_computer].to_i
-        GameInfo.new(**parsed)
+        @id = id
+        @player = Player.new(marker: parsed[:player], last_move: parsed[:last_move_player].to_i)
+        @computer = Player.new(marker: parsed[:computer], last_move: parsed[:last_move_computer].to_i)
+        @board = Board.new(JSON.parse(parsed[:board]))
+        @turn = parsed[:turn]
+        @status = parsed[:status]
+        @winner = parsed[:winner]
+        @token = parsed[:token]
       else
         raise GameNotFound, "Game not found"
       end
+    end
+
+    def from_json(json_string)
+      parsed = JSON.parse(json_string, symbolize_names: true)
+      @id = parsed[:id]
+      @player = Player.new(marker: parsed[:player], last_move: parsed[:last_move_player])
+      @computer = Player.new(marker: parsed[:computer], last_move: parsed[:last_move_computer])
+      @board = Board.new(JSON.parse(parsed[:board]))
+      @turn = parsed[:turn]
+      @status = parsed[:status]
+      @winner = parsed[:winner]
+      @token = parsed[:token]
+      self
+    end
+
+    def to_json(*_args)
+      {
+        id: @id,
+        board: @board.board_json,
+        board_view: @board.board_view_json,
+        turn: @turn,
+        player: @player.marker,
+        computer: @computer.marker,
+        status: @status,
+        winner: @winner,
+        last_move_player: @player.last_move,
+        last_move_computer: @computer.last_move,
+        token: @token
+      }.to_json
     end
   end
 end

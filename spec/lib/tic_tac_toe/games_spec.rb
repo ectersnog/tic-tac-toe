@@ -11,10 +11,10 @@ RSpec.describe TicTacToe::Game do
         expect(result).to be_a(described_class)
         expect(result.id).to be_a(String)
         expect(result.turn).to be("player")
-        expect(result.player).to be("X")
-        expect(result.computer).to be("O")
-        expect(result.last_move_player).to be 0
-        expect(result.last_move_computer).to be 0
+        expect(result.player.marker).to be("X")
+        expect(result.computer.marker).to be("O")
+        expect(result.player.last_move).to be 0
+        expect(result.player.last_move).to be 0
         expect(result.status).to be("active")
         expect(result.winner).to be("")
         expect(result.token).to be_a(String)
@@ -24,13 +24,13 @@ RSpec.describe TicTacToe::Game do
     context "when passed player parameter" do
       it "allows player to play as O" do
         result = described_class.new(player: "O")
-        expect(result.player).to be("O")
-        expect(result.computer).to be("X")
+        expect(result.player.marker).to be("O")
+        expect(result.computer.marker).to be("X")
       end
 
       it "defaults player to X given a non playable character" do
         result = described_class.new(player: "Q")
-        expect(result.player).to be("X")
+        expect(result.player.marker).to be("X")
       end
     end
 
@@ -39,7 +39,7 @@ RSpec.describe TicTacToe::Game do
         result1 = described_class.new
         result2 = described_class.new(id: result1.id, token: result1.token)
         expect(result1.id).to eq(result2.id)
-        expect(result1.board).to eq(result2.board)
+        expect(result1.board.board_view).to eq(result2.board.board_view)
       end
     end
   end

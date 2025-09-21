@@ -12,9 +12,9 @@ module TicTacToe
       [0, 4, 8],
       [2, 4, 6]
     ].freeze
-    def self.check_winner(game, player)
+    def self.check_winner(board, player)
       WINNING_COMBINATIONS.any? do |positions|
-        positions.all? { |cell| game.board[cell] == player }
+        positions.all? { |cell| board[cell] == player }
       end
     end
 

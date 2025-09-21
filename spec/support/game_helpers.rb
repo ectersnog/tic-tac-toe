@@ -1,19 +1,16 @@
 # frozen_string_literal: true
 
 module GameHelpers
-  def create_game(player: 'X', status: 'active')
-    game = TicTacToe::Game.find_game(player:)
-    game = game.with(status:) unless status == 'active'
-    TicTacToe::Game.game_save(game)
-    game
+  def create_game(player: 'X')
+    TicTacToe::Game.new(player:)
   end
 
-  def create_winning_game(positions, symbol: 'X')
-    game = TicTacToe::Game.find_game
+  def create_winning_game(positions)
+    game = TicTacToe::Game.new
     positions.each do |position|
-      game.board[position] = symbol
+      game.board.play_square(position, game.player)
     end
-    TicTacToe::Game.game_save(game)
+    game.game_save
     game
   end
 

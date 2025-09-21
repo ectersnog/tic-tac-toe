@@ -2,87 +2,70 @@
 
 module TicTacToe
   module Moves
-    def self.player_move(move_request:, token: nil)
-      if (cached = REDIS.get("idempotency:#{move_request.id}:#{move_request.idempotency_key}"))
-        game = GameInfo.new(**JSON.parse(cached))
-        return Game.game_save(game)
+    def player_move(position:, idempotency_key:)
+      if (cached = REDIS.get("idempotency:#{@id}:#{idempotency_key}"))
+        return self.from_json(cached)
       end
 
-      game = Game.new(id: move_request.id, token:)
-      position = move_request.position.to_i - 1
+      position = position.to_i - 1
       raise InvalidMove, "Invalid position" if position > 8 || position.negative?
-      raise InvalidMove, "Game completed" if Victory.game_won?(game)
-      raise InvalidMove, "Square already taken" unless check_position?(game, position)
+      raise InvalidMove, "Game completed" if Victory.game_won?(self)
+      raise InvalidMove, "Square already taken" unless @board.square_free?(position)
 
-      game.board[position] = game.player
-      game = game.game.with(
-        last_move_player: position + 1,
-        turn: "computer",
-        board_view: game.board_view
-      )
-      if Victory.check_winner(game, game.player)
-        game = game.with(winner: "player", status: "completed")
+      @board.play_square(position, @player)
+      @player.last_move = position
+      @turn = "computer"
+      if Victory.check_winner(@board.board, @player.marker)
+        @winner = "player"
+        @status = "completed"
       end
-      REDIS.setex("idempotency:#{move_request.id}:#{move_request.idempotency_key}", 3600, game.to_json)
-      Game.game_save(game)
+      REDIS.setex("idempotency:#{@id}:#{idempotency_key}", 3600, to_json)
+      self.game_save
     end
 
-    def self.computer_move(move_request:, token: nil)
-      game = Game.new(id: move_request.id, token:)
-      positions = get_positions(game)
+    def computer_move(idempotency_key:)
+      positions = @board.available_positions
       if positions.empty?
-        game = game.game.with(status: "completed", winner: "draw")
-        Game.game_save(game)
-        return game
+        @status = "completed"
+        @winner = "draw"
+        self.game_save
+        return
       end
 
-      computer_win = find_winning(game.dup, game.computer, positions)
-      player_win = find_winning(game.dup, game.player, positions)
+      computer_win = find_winning(@board.board, @computer.marker, positions)
+      player_win = find_winning(@board.board, @player.marker, positions)
       if computer_win
-        game.board[computer_win] = game.computer
+        @board.play_square(computer_win, @computer)
         position = computer_win
       elsif player_win
-        game.board[player_win] = game.computer
+        @board.play_square(player_win, @computer)
         position = player_win
       else
         position = positions.shuffle.pop
-        game.board[position] = game.computer
+        @board.play_square(position, @computer)
       end
-      game = game.game.with(
-        last_move_computer: position + 1,
-        turn: "player",
-        board_view: game.board_view
-      )
-      if Victory.check_winner(game, game.computer)
-        game = game.with(winner: "computer", status: "completed")
+      @computer.last_move = position
+      @turn = "player"
+
+      if Victory.check_winner(@board.board, @computer.marker)
+        @winner = "computer"
+        @status = "completed"
       end
-      REDIS.setex("idempotency:#{move_request.id}:#{move_request.idempotency_key}", 3600, game.to_json)
-      Game.game_save(game)
+      REDIS.setex("idempotency:#{@id}:#{idempotency_key}", 3600, to_json)
+      game_save
     end
 
-    def self.get_positions(game)
-      playable = []
-      game.board.each_index do |position|
-        playable << position if check_position?(game, position)
-      end
-      playable
-    end
-
-    def self.find_winning(game, player, positions)
+    def find_winning(board, player, positions)
       positions.each do |position|
-        tmp_game = game.dup
-        tmp_game.board[position] = player
+        tmp_game = board.dup
+        tmp_game[position] = player
         if Victory.check_winner(tmp_game, player)
-          tmp_game.board[position] = "-"
+          tmp_game[position] = "-"
           return position
         end
-        tmp_game.board[position] = "-"
+        tmp_game[position] = "-"
       end
       nil
-    end
-
-    def self.check_position?(game, position)
-      game.board[position] == "-"
     end
   end
 end

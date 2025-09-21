@@ -25,7 +25,6 @@ class GamesController < ApplicationController
       player: params[:player],
       token:
     )
-    # game_info = TicTacToe::Game.find_game(params[:id])
     render locals: { game_info: }
   end
 
@@ -35,19 +34,16 @@ class GamesController < ApplicationController
     if idempotency_key.blank?
       render json: { errors: ["Idempotency key not found"] }, status: :unprocessable_entity
     else
-      move_request = TicTacToe::MoveRequest.new(
-        id: params[:id],
+      game = TicTacToe::Game.new(id: params[:id], token:)
+      game.player_move(
         position: params[:position],
-        idempotency_key:)
+        idempotency_key:
+      )
 
-      response = TicTacToe::Moves.player_move(
-        move_request:,
-        token:)
-
-      if response.winner.empty? && response.turn == "computer"
-        response = TicTacToe::Moves.computer_move(move_request:, token:)
+      if game.winner.empty? && game.turn == "computer"
+        game.computer_move(idempotency_key:)
       end
-      render locals: { game_info: response }
+      render locals: { game_info: game }
     end
   end
 

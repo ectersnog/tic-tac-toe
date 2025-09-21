@@ -5,26 +5,38 @@ module TicTacToe
     attr_reader :board, :board_view
 
     def initialize(board = nil)
-      self.board = board || Array.new(9, '-')
+      @board = board || Array.new(9, '-')
+      @board_view = generate_board_view(@board)
     end
 
     def board=(input)
       @board = input
-      @board_view = self.class.generate_board_view(@board)
+      @board_view = generate_board_view(@board)
     end
 
     def play_square(position, player)
-      new_board = @board.dup
-      new_board[position] = player
-      self.board = new_board
+      @board[position] = player.marker
+      @board_view = generate_board_view(@board)
     end
 
     def square_free?(position)
       @board[position] == "-"
     end
 
-    def self.generate_board_view(board)
+    def available_positions
+      @board.each_index.select { |i| square_free?(i) }
+    end
+
+    def generate_board_view(board)
       board.each_slice(3).to_a
+    end
+
+    def board_json
+      JSON.dump(@board)
+    end
+
+    def board_view_json
+      JSON.dump(@board_view)
     end
   end
 end

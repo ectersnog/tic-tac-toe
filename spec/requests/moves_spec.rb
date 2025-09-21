@@ -61,12 +61,15 @@ RSpec.describe 'moves' do
 
       response 409, 'returns an error on already finished game' do
         schema "$ref" => "#/components/schemas/error_response"
-        let(:game) { create_game(status: 'completed') }
+        let(:game) { create_game }
         let(:id) { game.id }
         let(:'X-Game-Token') { game.token }
         let(:'Idempotency-Key') { SecureRandom.hex(10) }
         let(:body) { { position: 1 } }
-
+        before do
+          game.status = 'completed'
+          game.game_save
+        end
         run_test!
       end
 
