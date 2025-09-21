@@ -5,6 +5,8 @@ module TicTacToe
   class InvalidToken < StandardError; end
   class InvalidMove < StandardError; end
 
+  # Data structure for passing Game information between methods
+
   GameInfo = Data.define(
     :id,
     :board,
@@ -19,6 +21,7 @@ module TicTacToe
     :token
   )
 
+  # Data structure for passing Move information between methods
   MoveRequest = Data.define(
     :id,
     :position,

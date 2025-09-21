@@ -70,6 +70,7 @@ RSpec.describe 'moves' do
           game.status = 'completed'
           game.game_save
         end
+
         run_test!
       end
 

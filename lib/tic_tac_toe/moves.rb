@@ -2,9 +2,16 @@
 
 module TicTacToe
   module Moves
+    # Plays the move passed from the player
+    #   Checks if idempotency_key has been used and returns cached version
+    #   Sets cache if idempotency_key has not been used
+    #
+    # @param position [Integer] The position to be played
+    # @param idempotency_key [String] The idempotency key to keep from multiple attempts at same request
+    # @return [TicTacToe::Game] The updated game state or game state with Idempotency Key
     def player_move(position:, idempotency_key:)
       if (cached = REDIS.get("idempotency:#{@id}:#{idempotency_key}"))
-        return self.from_json(cached)
+        return from_json(cached)
       end
 
       position = position.to_i - 1
@@ -20,15 +27,20 @@ module TicTacToe
         @status = "completed"
       end
       REDIS.setex("idempotency:#{@id}:#{idempotency_key}", 3600, to_json)
-      self.game_save
+      game_save
     end
 
+    # Plays a move from the computer
+    #   Sets the cache at the end with idempotency_key
+    #
+    # @param idempotency_key [String] The idempotency_key from player move
+    # @return [TicTacToe::Game] The updated game object
     def computer_move(idempotency_key:)
       positions = @board.available_positions
       if positions.empty?
         @status = "completed"
         @winner = "draw"
-        self.game_save
+        game_save
         return
       end
 
@@ -54,6 +66,13 @@ module TicTacToe
       REDIS.setex("idempotency:#{@id}:#{idempotency_key}", 3600, to_json)
       game_save
     end
+
+    # Method for finding if there are any moves that will win in the next turn
+    #
+    # @param board [TicTacToe::Board] The board that you want to check
+    # @param player [TicTacToe::Player] The player to check if they have a winning move
+    # @param positions [Array<Integer>] List of positions that are available to play
+    # @return [Integer] The first position found that can result in a victory
 
     def find_winning(board, player, positions)
       positions.each do |position|

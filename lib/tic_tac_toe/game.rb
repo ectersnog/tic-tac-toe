@@ -6,7 +6,9 @@ require_relative 'moves'
 
 module TicTacToe
   class Game
+    # The Game Object for Tic Tac Toe
     include Moves
+
     attr_accessor :status
 
     attr_reader :board,
@@ -18,10 +20,19 @@ module TicTacToe
       :winner,
       :token
 
+    # Find or Create a new Tic Tac Toe Game
+    #
+    # @param id [String<UUID>] The id of an already existing game
+    # @param player [String] "X" or "O", The players marker to be used for game
+    # @param token [String] The token for an already existing game
+    # @return [TicTacToe::Game] Tic Tac Toe Game object
     def initialize(id: nil, player: "X", token: nil)
       find_game(id:, player:, token:)
     end
 
+    # Creates a new game in Redis
+    #
+    # @param player [String] "X" or "O", The players marker to be used for game
     def new_game(player: "X")
       @id = SecureRandom.uuid
       @player = Player.new(marker: "X", last_move: 0)
@@ -33,9 +44,10 @@ module TicTacToe
       @winner = ""
       @token = SecureRandom.hex(10)
 
-      self.game_save
+      game_save
     end
 
+    # Saves the game to Redis
     def game_save
       game_hash = {
         board: @board.board_json,
@@ -53,6 +65,12 @@ module TicTacToe
       self
     end
 
+    # Find or Create a new Tic Tac Toe Game
+    #
+    # @param id [String<UUID] The id of an already existing game
+    # @param player [String] "X" or "O", The players marker to be used for game
+    # @param token [String] The token for an already existing game
+    # @return [TicTacToe::Game] Tic Tac Toe Game object
     def find_game(id: nil, player: "X", token: nil)
       if id.nil?
         new_game(player:)
@@ -74,6 +92,9 @@ module TicTacToe
       end
     end
 
+    # Method for converting from json a Tic Tac Toe Game object saved in cache for Idempotency
+    #
+    # @return [TicTacToe::Game] The saved cache of game state
     def from_json(json_string)
       parsed = JSON.parse(json_string, symbolize_names: true)
       @id = parsed[:id]
@@ -87,6 +108,7 @@ module TicTacToe
       self
     end
 
+    # Method for converting to json for saving into cache for Idempotency
     def to_json(*_args)
       {
         id: @id,
