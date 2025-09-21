@@ -1,0 +1,37 @@
+services:
+  web:
+    tty: true
+    stdin_open: true
+    build: . 
+    entrypoint: ./bin/docker-entrypoint
+    command: sh -c "bin/rails s -p ${DOCKER_WEB_PORT:-3401} -b '0.0.0.0'"
+    volumes:
+      - .:/app
+      - bundle:/time-tracker/usr/local/bundle
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "${DOCKER_WEB_PORT:-3401}:3401"
+    env_file:
+      - .env
+    environment:
+      - ENABLE_BOOTSNAP=false
+
+  redis:
+    image: redis:7.2.5
+    restart: always
+    command: redis-server --bind 0.0.0.0
+    ports:
+      - "${DOCKER_REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli PING"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - redis_data:/RecipesAPI/var/lib/redis/data
+
+volumes:
+  bundle:
+  redis_data:
